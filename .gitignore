@@ -1,6 +1,6 @@
 __pycache__
+.archive
 .vscode
 /data*
-/_data*
 *.tgz
 *.log
