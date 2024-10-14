@@ -1,7 +1,5 @@
 #!/bin/bash -i
 
-###### THIS SCRIPT IS INCOMPLETE, see usage
-
 get_random_seed() {
   awk 'BEGIN {
     # seed from CPU time in seconds
@@ -14,11 +12,8 @@ usage () {
   cat <<-END
 Run GSCALEI with a 2-step autoencoder once in CPU.
 
-NOT!! This script is not done yet; the score estimation
-steps are not included, be it on x or y.
-
 $0 -h    Display this help message
-$0 [-G] [-R|-r EPOCHS] [-x] [-D|-d EPOCHS] [-s SEED] DATA_DIR LATENT_DIM
+$0 [-G] [-R | -r EPOCHS] [-x] [-L | -l EPOCHS] [-D | -d EPOCHS] [-s SEED] DATA_DIR LATENT_DIM
          Run GSCALEI once with DATA_DIR as data directory
          and LATENT_DIM as the output of the first encoder layer
 
@@ -28,8 +23,8 @@ Options:
   -r EPOCHS Load autoenc step 1 checkpoint and do EPOCH epochs
   -R        Skip autoenc step 1 training
   -r EPOCHS Load autoenc step 1 checkpoint and do EPOCH epochs
-  -L        Skip LDR training step
   -x        Train LDR on original input instead of step 1 output
+  -L        Skip LDR training step
   -l EPOCHS Load LDR checkpoint and do EPOCH epochs for ALL pairs
   -D        Skip autoenc step 2 training
   -d EPOCHS Load autoenc step 2 checkpoint and do EPOCH epochs
@@ -86,7 +81,7 @@ skip_ae2_train=false
 
 
 # Parse options
-while getopts ":hGRr:Ll:xDd:s:" option; do
+while getopts ":hGRr:xLl:Dd:s:" option; do
   case $option in
     h)
       usage
@@ -102,11 +97,11 @@ while getopts ":hGRr:Ll:xDd:s:" option; do
       AE1_LOAD_CHECKPOINT="--load-checkpoint"
       AE1_MAX_EPOCHS=$OPTARG
       ;;
-    L)
-      skip_ldr_train=true
-      ;;
     x)
       ldr_on_x=true
+      ;;
+    L)
+      skip_ldr_train=true
       ;;
     l)
       LDR_LOAD_CHECKPOINT="--load-checkpoint"
