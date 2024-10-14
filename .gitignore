@@ -1,0 +1,6 @@
+__pycache__
+.vscode
+/data*
+/_data*
+*.tgz
+*.log
