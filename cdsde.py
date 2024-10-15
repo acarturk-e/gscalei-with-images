@@ -79,7 +79,7 @@ class LdrNn(nn.Sequential):
         self.n_layers = n_layers
         self.width = width
         od = OrderedDict[str, nn.Module]()
-        od["flatten"] = nn.Flatten()
+        od["flatten_in"] = nn.Flatten()
         od["linear1"] = nn.Linear(n, width)
         od["sigmoid1"] = nn.Sigmoid()
         od["batchnorm1"] = nn.BatchNorm1d(width)
@@ -88,7 +88,7 @@ class LdrNn(nn.Sequential):
             od[f"sigmoid{i}"] = nn.Sigmoid()
             od[f"batchnorm{i}"] = nn.BatchNorm1d(width)
         od[f"linear{n_layers}"] = nn.Linear(width, 1)
-        od[f"flatten"] = nn.Flatten(-2, -1)
+        od[f"squeeze_out"] = nn.Flatten(-2, -1)
         super().__init__(od)
 
 
