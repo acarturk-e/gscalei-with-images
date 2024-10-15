@@ -129,7 +129,7 @@ def main(
     # lr_sched = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, patience=3)
 
 
-    def loss_fn(yb: Tensor, dsyb: Tensor) -> Tensor:
+    def loss_fn(yb: Tensor, dsyb: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         """The loss function for our autoencoder. Note that the `dsyb`
         is the score difference between hard intervention environment
         pairs for this batch."""
@@ -152,62 +152,82 @@ def main(
 
         loss_reconstr = lambda1 * (yhatb - yb).pow(2).mean(0).sum()
         loss = loss_main + loss_reconstr
-        return loss
+        return loss, loss_reconstr.detach(), loss_main.detach()
 
 
     for epoch in range(args.max_epochs):
 
         # Training
         autoenc.train()
-        running_loss = log_steps = 0
+        running_loss = running_loss_reconstr = running_loss_main = log_steps = 0
         train_sampler.set_epoch(epoch)
         for (yb, dsyb) in train_loader:
             opt.zero_grad()
             assert isinstance(yb, Tensor)
             assert isinstance(dsyb, Tensor)
-            loss = loss_fn(yb, dsyb)
+            loss, loss_reconstr, loss_main = loss_fn(yb, dsyb)
 
             loss.backward()
             opt.step()
 
             log_steps += 1
             running_loss += loss.item()
+            running_loss_reconstr += loss_reconstr.item()
+            running_loss_main += loss_main.item()
 
         avg_loss = torch.tensor(running_loss / log_steps)
+        avg_loss_reconstr = torch.tensor(running_loss_reconstr / log_steps)
+        avg_loss_main = torch.tensor(running_loss_main / log_steps)
+
         dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
+        dist.all_reduce(avg_loss_reconstr, op=dist.ReduceOp.SUM)
+        dist.all_reduce(avg_loss_main, op=dist.ReduceOp.SUM)
+
         avg_loss = avg_loss.item() / dist.get_world_size()
+        avg_loss_reconstr = avg_loss_reconstr.item() / dist.get_world_size()
+        avg_loss_main = avg_loss_main.item() / dist.get_world_size()
 
         # End of training
         dist.barrier()
 
         if rank == 0:
             assert logger is not None
-            logger.info(f"(step={epoch}), Train Loss: {avg_loss:.5f}")
+            logger.info(f"({epoch=}), Train Loss: {avg_loss:.5f} (reconstr={avg_loss_reconstr:.5f}, main={avg_loss_main:.5f})")
 
         # Validation
         autoenc.eval()
-        running_loss = log_steps = 0
+        running_loss = running_loss_reconstr = running_loss_main = log_steps = 0
         valid_sampler.set_epoch(epoch)
         for (yb, dsyb) in valid_loader:
             assert isinstance(yb, Tensor)
             assert isinstance(dsyb, Tensor)
 
             with torch.no_grad():
-                loss = loss_fn(yb, dsyb)
+                loss, loss_reconstr, loss_main = loss_fn(yb, dsyb)
 
             log_steps += 1
             running_loss += loss.item()
+            running_loss_reconstr += loss_reconstr.item()
+            running_loss_main += loss_main.item()
 
         avg_loss = torch.tensor(running_loss / log_steps)
+        avg_loss_reconstr = torch.tensor(running_loss_reconstr / log_steps)
+        avg_loss_main = torch.tensor(running_loss_main / log_steps)
+
         dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
+        dist.all_reduce(avg_loss_reconstr, op=dist.ReduceOp.SUM)
+        dist.all_reduce(avg_loss_main, op=dist.ReduceOp.SUM)
+
         avg_loss = avg_loss.item() / dist.get_world_size()
+        avg_loss_reconstr = avg_loss_reconstr.item() / dist.get_world_size()
+        avg_loss_main = avg_loss_main.item() / dist.get_world_size()
 
         # End of validation
         dist.barrier()
 
         if rank == 0:
             assert logger is not None
-            logger.info(f"(step={epoch}), Validation Loss: {avg_loss:.5f}")
+            logger.info(f"({epoch=}), Validation Loss: {avg_loss:.5f} (reconstr={avg_loss_reconstr:.5f}, main={avg_loss_main:.5f})")
             if args.checkpoint_epochs != -1 and epoch % args.checkpoint_epochs == 0:
                 torch.save(autoenc.state_dict(), os.path.join(args.data_dir, f"autoenc_disentangle_{latent_dim}.pth"))
 
