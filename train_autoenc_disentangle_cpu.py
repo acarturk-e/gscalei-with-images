@@ -118,7 +118,7 @@ def main(
     autoenc = Autoencoder(n, latent_dim)
 
     if args.load_checkpoint:
-        autoenc.load_state_dict(torch.load(os.path.join(args.data_dir, "autoenc.pth"), weights_only=True))
+        autoenc.load_state_dict(torch.load(os.path.join(args.data_dir, f"autoenc_disentangle_{latent_dim}.pth"), weights_only=True))
 
     encoder = DDP(autoenc.get_submodule("encoder"))
     decoder = DDP(autoenc.get_submodule("decoder"))
