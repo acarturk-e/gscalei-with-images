@@ -7,7 +7,30 @@ __all__ = ["DenseAutoencoder", "CnnAutoencoder"]
 from collections import OrderedDict
 from torch import nn
 
-# Dense autoencoder model.
+
+class DenseAutoencoder2(nn.Sequential):
+    """Autoencoder from `d` input shape to `n` latent dimension"""
+    def __init__(self, n: int, d: int, width: int = 256):
+        self.n = n
+        self.d = d
+        self.width = width
+        od = OrderedDict()
+        od["encoder"] = nn.Sequential(
+            nn.Linear(d, width),
+            nn.ReLU(inplace=False),
+            nn.LayerNorm(width),
+            nn.Linear(width, n),
+        )
+        od["decoder"] = nn.Sequential(
+            # n
+            nn.Linear(n, width),
+            nn.ReLU(False),
+            nn.LayerNorm(width),
+            nn.Linear(width, d),
+        )
+        super(DenseAutoencoder2, self).__init__(od)
+
+
 class DenseAutoencoder(nn.Sequential):
     """Autoencoder for 64x64 RGB images with `n` latent dimensions"""
     def __init__(self, n: int):
