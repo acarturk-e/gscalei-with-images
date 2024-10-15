@@ -119,6 +119,7 @@ DATA_DIR=$1
 
 
 echo "$(date) Initializing conda"
+eval "$(conda shell.bash hook)"
 conda activate python-2024-10 || exit
 
 if [ "$skip_data_gen" = true ]; then
