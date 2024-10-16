@@ -159,7 +159,7 @@ def main(
 
         # Training
         autoenc.train()
-        running_loss = log_steps = 0
+        running_loss = running_loss_reconstr = running_loss_main = log_steps = 0
         train_sampler.set_epoch(epoch)
         for (yb, dsyb) in train_loader:
             opt.zero_grad()
@@ -192,7 +192,7 @@ def main(
 
         if rank == 0:
             assert logger is not None
-            logger.info(f"(step={epoch}), Train Loss: {avg_loss:.5f}")
+            logger.info(f"({epoch=}), Train Loss: {avg_loss:.5f} (reconstr={avg_loss_reconstr:.5f}, main={avg_loss_main:.5f})")
 
         # Validation
         autoenc.eval()
