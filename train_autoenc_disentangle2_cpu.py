@@ -138,7 +138,7 @@ def main(
     opt = torch.optim.Adam(
         autoenc.parameters(),
         lr=args.lr, weight_decay=args.weight_decay)
-    lr_sched = torch.optim.lr_scheduler.ExponentialLR(opt, gamma=args.lr_gamma)
+    lr_sched = torch.optim.lr_scheduler.MultiStepLR(opt, milestones=[100])
 
 
     def loss_fn(yb: Tensor, dsyb: Tensor) -> tuple[Tensor, Tensor, Tensor]:
@@ -267,7 +267,6 @@ if __name__ == "__main__":
     parser.add_argument("latent_dim", type=int, metavar="DIM", help="Dimension of the dim-reduced representations.")
     parser.add_argument("--lambda1", type=float, default=1.0, help="Scale for reconstruction loss.")
     parser.add_argument("--lr", type=float, default=3e-6, help="Learning rate of optimizer.")
-    parser.add_argument("--lr-gamma", type=float, default=0.95, help="Exponential LR decay factor. Set tp 1 to disable.")
     parser.add_argument("--weight_decay", type=float, default=0.01, metavar="LAMBDA", help="Weight decay.")
     parser.add_argument("--max-epochs", type=int, default=250, metavar="EPOCHS", help="Number of epochs to run for each LDR model.")
     parser.add_argument("--checkpoint-epochs", type=int, default=10, metavar="EPOCHS", help="Epoch period of checkpoint saves. Set to -1 to not save checkpoints.")

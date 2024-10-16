@@ -60,7 +60,7 @@ AE1_CHECKPOINT_EPOCHS="5"
 
 ## Train LDR
 LDR_LOAD_CHECKPOINT=""
-LDR_LR="1e-5"
+LDR_LR="1e-6"
 LDR_WEIGHT_DECAY="0.01"
 LDR_MAX_EPOCHS="10"
 LDR_CHECKPOINT_EPOCHS="5"
@@ -170,7 +170,7 @@ else
     --lr $AE1_LR --weight_decay $AE1_WEIGHT_DECAY --max-epochs $AE1_MAX_EPOCHS \
     --checkpoint-epochs $AE1_CHECKPOINT_EPOCHS --num-workers $NUM_WORKERS \
     --global-batch-size $GLOBAL_BATCH_SIZE --global-seed $GLOBAL_SEED || exit
-  echo "$(date) Applying dim reduction to all x related data"
+  echo "$(date) Applying dim reduction to x"
   python x_to_y.py $DATA_DIR $LATENT_DIM || exit
 fi
 
@@ -183,6 +183,7 @@ else
       --lr $LDR_LR --weight_decay $LDR_WEIGHT_DECAY --max-epochs $LDR_MAX_EPOCHS \
       --checkpoint-epochs $LDR_CHECKPOINT_EPOCHS --num-workers $NUM_WORKERS \
       --global-batch-size $GLOBAL_BATCH_SIZE --global-seed $GLOBAL_SEED || exit
+    echo "$(date) Applying dim reduction to dsx"
     python dsx_to_dsy.py $DATA_DIR $LATENT_DIM || exit
   else
     echo "$(date) Starting LDR training on step 1 outputs"
