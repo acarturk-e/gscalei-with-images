@@ -27,6 +27,7 @@ from torch.utils.data.distributed import DistributedSampler
 
 # Local imports
 from autoencoders import LinearAutoencoder as Autoencoder
+import utils
 
 
 def get_data(data_dir: str, latent_dim: int) -> tuple[Tensor, Tensor]:
@@ -36,6 +37,14 @@ def get_data(data_dir: str, latent_dim: int) -> tuple[Tensor, Tensor]:
     dsys_bw_hards = torch.load(os.path.join(data_dir, f"dsys_bw_hards_{latent_dim}.pth"), weights_only=True)
     logging.info(f"Loaded dsy data with shape {dsys_bw_hards.shape = }")
     return ys_obs, dsys_bw_hards
+
+
+def get_z_data(data_dir: str) -> Tensor:
+    """Returns zs_obs"""
+    data = np.load(os.path.join(data_dir, "z_and_x.npz"))
+    zs_obs = data["zs_obs"]
+    zs_obs = torch.from_numpy(zs_obs).float()
+    return zs_obs
 
 
 def create_logger(log_dir: str) -> logging.Logger:
@@ -76,6 +85,9 @@ def main(
 
     # Read data and create distributive data loader
     ys_obs, dsys_bw_hards = get_data(data_dir, latent_dim)
+
+    # Get z data for validation MCC
+    zs_obs = get_z_data(data_dir)
 
     # One intervention pair per latent dimension
     n = dsys_bw_hards.shape[0]
@@ -231,6 +243,12 @@ def main(
             logger.info(f"({epoch=}), Validation Loss: {avg_loss:.5f} (reconstr={avg_loss_reconstr:.5f}, main={avg_loss_main:.5f})")
             if args.checkpoint_epochs != -1 and epoch % args.checkpoint_epochs == 0:
                 torch.save(autoenc.state_dict(), os.path.join(args.data_dir, f"autoenc_disentangle_{latent_dim}.pth"))
+
+                # also add a MCC check for every checkpoint.
+                zhats_obs = autoenc.encoder(ys_obs)
+                assert isinstance(zhats_obs, Tensor)
+                z_mcc = utils.mcc(zhats_obs.detach().cpu().numpy(), zs_obs.detach().cpu().numpy())
+                logger.info(f"(MCC={z_mcc:.4f})")
 
     dist.barrier()
     autoenc.eval()
