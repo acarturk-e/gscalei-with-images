@@ -23,7 +23,7 @@ def main(args: argparse.Namespace):
 
     width: int = args.image_size
     height = width
-    ball_radius = width // 8
+    ball_radius = int(width * 0.08)
 
     data_dir = args.data_dir
     if not os.path.exists(data_dir):
