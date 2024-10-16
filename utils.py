@@ -121,15 +121,10 @@ def mcc(x_est: npt.NDArray[np.floating], x_gt: npt.NDArray[np.floating]) -> floa
     between entries of `x_est` and `x_gt`, and solves the maximum linear sum
     assignment problem."""
     from scipy.optimize import linear_sum_assignment  # type: ignore
-    assert x_est.ndim == 2 and x_est.shape == x_gt.shape
-    x_est -= x_est.mean(axis=0, keepdims=True)
-    x_gt -= x_gt.mean(axis=0, keepdims=True)
-    xy_abs_corrs = np.abs((x_est.T @ x_gt) / ((
-            (x_est.T @ x_est).diagonal()[:, None] *
-            (x_gt.T @ x_gt).diagonal()
-        ) ** 0.5))
-    row_ind, col_ind = linear_sum_assignment(-xy_abs_corrs)
-    return xy_abs_corrs[row_ind, col_ind].mean()
+    n_samples, n = x_gt.shape
+    abs_corr = np.abs(np.corrcoef(x_gt, x_est, rowvar=False)[n:, :n])
+    row_ind, col_ind = linear_sum_assignment(abs_corr, maximize=True)
+    return abs_corr[row_ind, col_ind].mean()
 
 
 def shd(g_est: npt.NDArray[np.bool], g_gt: npt.NDArray[np.bool]) -> int:
